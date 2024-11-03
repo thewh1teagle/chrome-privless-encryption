@@ -13,11 +13,13 @@ import requests
 import websocket
 import json
 import subprocess
+import os
 
 DEBUG_PORT = 9222
 DEBUG_URL = f'http://localhost:{DEBUG_PORT}/json'
 CHROME_PATH = rf"C:\Program Files\Google\Chrome\Application\chrome.exe"
-USER_DATA_DIR = rf'C:\Users\User\AppData\Local\google\chrome\User Data'
+LOCAL_APP_DATA = os.getenv('LOCALAPPDATA')
+USER_DATA_DIR = rf'{LOCAL_APP_DATA}\google\chrome\User Data'
 
 def get_debug_ws_url():
     res = requests.get(DEBUG_URL)
