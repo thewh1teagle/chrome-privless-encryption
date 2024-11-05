@@ -15,9 +15,14 @@ import json
 import subprocess
 import os
 from pathlib import Path
+import configparser
 
-BROWSER = 'opera gx'  # chrome, edge, brave, opera, opera gx
-DEBUG_PORT = 9222
+
+config = configparser.ConfigParser()
+config.read('config.ini')
+
+BROWSER = config['settings']['browser']
+DEBUG_PORT = config.getint('settings', 'debug_port')
 DEBUG_URL = f'http://localhost:{DEBUG_PORT}/json'
 LOCAL_APP_DATA = os.getenv('localappdata')
 APP_DATA = os.getenv('appdata')
@@ -64,16 +69,21 @@ def close_browser(bin_path):
 def start_browser(bin_path, user_data_path):
     subprocess.Popen(
         [bin_path, '--restore-last-session', f'--remote-debugging-port={DEBUG_PORT}', '--remote-allow-origins=*',
-         '--headless', f'--user-data-dir={user_data_path}'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+         '--headless', f'--user-data-dir={user_data_path}'], stdout=subprocess.DEVNULL)
 
 
 def get_all_cookies(ws_url_gac):
-    ws = websocket.create_connection(ws_url_gac)
-    ws.send(json.dumps({'id': 1, 'method': 'Network.getAllCookies'}))
-    response = ws.recv()
-    response = json.loads(response)
-    cookies_gac = response['result']['cookies']
-    ws.close()
+    try:
+        ws = websocket.create_connection(ws_url_gac)
+        ws.send(json.dumps({'id': 1, 'method': 'Network.getAllCookies'}))
+        response = ws.recv()
+        response = json.loads(response)
+        cookies_gac = response['result']['cookies']
+    except Exception as err:
+        print(f"Error retrieving cookies: {err}")
+        cookies_gac = []
+    finally:
+        ws.close()
     return cookies_gac
 
 
@@ -82,7 +92,12 @@ if __name__ == "__main__":
     print(f"Browser binary path: {config['bin']}")
     close_browser(config['bin'])
     start_browser(config['bin'], config['user_data'])
-    ws_url = get_debug_ws_url()
-    cookies = get_all_cookies(ws_url)
-    close_browser(config['bin'])
-    print(json.dumps(cookies, indent=4))
+    try:
+        ws_url = get_debug_ws_url()
+        cookies = get_all_cookies(ws_url)
+    except Exception as e:
+        print(f"Error: {e}")
+        cookies = []
+    finally:
+        close_browser(config['bin'])
+    print(f"Extracted cookies: {cookies}")
