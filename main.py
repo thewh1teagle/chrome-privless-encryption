@@ -16,7 +16,7 @@ import subprocess
 import os
 from pathlib import Path
 
-BROWSER = 'chrome'  # chrome, edge, brave, opera
+BROWSER = 'opera gx'  # chrome, edge, brave, opera, opera gx
 DEBUG_PORT = 9222
 DEBUG_URL = f'http://localhost:{DEBUG_PORT}/json'
 LOCAL_APP_DATA = os.getenv('localappdata')
@@ -39,6 +39,10 @@ CONFIGS = {
     'opera': {
         'bin': rf"{LOCAL_APP_DATA}\Programs\Opera\opera.exe",
         'user_data': rf'{APP_DATA}\Opera Software\Opera Stable'
+    },
+    'opera gx': {
+        'bin': rf"{LOCAL_APP_DATA}\Programs\Opera GX\opera.exe",
+        'user_data': rf'{APP_DATA}\Opera Software\Opera Stable'
     }
 }
 
@@ -46,6 +50,8 @@ CONFIGS = {
 def get_debug_ws_url():
     res = requests.get(DEBUG_URL)
     data = res.json()
+    if not data:
+        raise Exception("No data received from the debug URL")
     return data[0]['webSocketDebuggerUrl'].strip()
 
 
@@ -58,7 +64,7 @@ def close_browser(bin_path):
 def start_browser(bin_path, user_data_path):
     subprocess.Popen(
         [bin_path, '--restore-last-session', f'--remote-debugging-port={DEBUG_PORT}', '--remote-allow-origins=*',
-         '--headless', f'--user-data-dir={user_data_path}'], stdout=subprocess.DEVNULL)
+         '--headless', f'--user-data-dir={user_data_path}'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
 def get_all_cookies(ws_url_gac):
@@ -73,6 +79,7 @@ def get_all_cookies(ws_url_gac):
 
 if __name__ == "__main__":
     config = CONFIGS[BROWSER]
+    print(f"Browser binary path: {config['bin']}")
     close_browser(config['bin'])
     start_browser(config['bin'], config['user_data'])
     ws_url = get_debug_ws_url()
