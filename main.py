@@ -16,7 +16,7 @@ import subprocess
 import os
 from pathlib import Path
 
-BROWSER = 'chrome' # chrome, edge, brave, opera
+BROWSER = 'chrome'  # chrome, edge, brave, opera
 DEBUG_PORT = 9222
 DEBUG_URL = f'http://localhost:{DEBUG_PORT}/json'
 LOCAL_APP_DATA = os.getenv('localappdata')
@@ -42,26 +42,34 @@ CONFIGS = {
     }
 }
 
+
 def get_debug_ws_url():
     res = requests.get(DEBUG_URL)
     data = res.json()
     return data[0]['webSocketDebuggerUrl'].strip()
 
+
 def close_browser(bin_path):
     proc_name = Path(bin_path).name
-    subprocess.run(f'taskkill /F /IM {proc_name}', check=False, shell=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.run(f'taskkill /F /IM {proc_name}', check=False, shell=False, stdout=subprocess.DEVNULL,
+                   stderr=subprocess.DEVNULL)
+
 
 def start_browser(bin_path, user_data_path):
-    subprocess.Popen([bin_path, '--restore-last-session', f'--remote-debugging-port={DEBUG_PORT}', '--remote-allow-origins=*', '--headless', f'--user-data-dir={user_data_path}'], stdout=subprocess.DEVNULL)
+    subprocess.Popen(
+        [bin_path, '--restore-last-session', f'--remote-debugging-port={DEBUG_PORT}', '--remote-allow-origins=*',
+         '--headless', f'--user-data-dir={user_data_path}'], stdout=subprocess.DEVNULL)
 
-def get_all_cookies(ws_url):
-    ws = websocket.create_connection(ws_url)
+
+def get_all_cookies(ws_url_gac):
+    ws = websocket.create_connection(ws_url_gac)
     ws.send(json.dumps({'id': 1, 'method': 'Network.getAllCookies'}))
     response = ws.recv()
     response = json.loads(response)
-    cookies = response['result']['cookies']
+    cookies_gac = response['result']['cookies']
     ws.close()
-    return cookies
+    return cookies_gac
+
 
 if __name__ == "__main__":
     config = CONFIGS[BROWSER]
